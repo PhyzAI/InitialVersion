@@ -26,5 +26,26 @@ void setStripToColor(Adafruit_NeoPixel& strip, uint8_t r, uint8_t g, uint8_t b) 
     strip.show();
 }
 
-class 
+class LedStripLightShow {
+    private:
+        Adafruit_NeoPixel& strip;
+        unsigned long millisAtStart;
+        int millisToDelay;
+        enum ShowState {NONE = 0, theaterChase = 1, }
+    public:
+        LedStripLightShow(Adafruit_NeoPixel& s) {
+            strip = s;
+            millisAtStart = millis();
+            millisToDelay = 10;
+        }
+
+        LedStripLightShow(Adafruit_NeoPixel& s, int delay) {
+            strip = s;
+            millisAtStart = millis();
+            millisToDelay = delay;
+        }
+
+
+
+}
 
