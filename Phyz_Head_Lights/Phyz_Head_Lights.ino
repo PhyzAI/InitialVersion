@@ -1,14 +1,7 @@
-// A basic everyday NeoPixel strip test program.
 
-// NEOPIXEL BEST PRACTICES for most reliable operation:
-// - Add 1000 uF CAPACITOR between NeoPixel strip's + and - connections.
-// - MINIMIZE WIRING LENGTH between microcontroller board and first pixel.
-// - NeoPixel strip's DATA-IN should pass through a 300-500 OHM RESISTOR.
-// - AVOID connecting NeoPixels on a LIVE CIRCUIT. If you must, ALWAYS
-//   connect GROUND (-) first, then +, then data.
-// - When using a 3.3V microcontroller with a 5V-powered NeoPixel strip,
-//   a LOGIC-LEVEL CONVERTER on the data line is STRONGLY RECOMMENDED.
-// (Skipping these may work OK on your workbench but can fail in the field)
+/*
+ * Code for running lights on Phyz's head
+ */
 
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
@@ -16,6 +9,7 @@
 #endif
 
 #include <SoftwareSerial.h>
+#include <arduino-timer.h>
 
 #define CMD_PLAY_NEXT 0x01
 #define CMD_PLAY_PREV 0x02
@@ -44,9 +38,7 @@ SoftwareSerial mp3(ARDUINO_RX, ARDUINO_TX);
 #define LED_PIN_HEART   8
 #define LED_PIN_R_ARM   9
 #define LED_PIN_L_ARM  10
-#define SPEECH_IN      12
-
-
+#define SPEECH_IN_PIN  12
 #define PWM_INPUT 3
 
 // How many NeoPixels are attached to the Arduino?
@@ -56,7 +48,6 @@ SoftwareSerial mp3(ARDUINO_RX, ARDUINO_TX);
 #define LED_COUNT_HEART 10
 #define LED_COUNT_R_ARM  6
 #define LED_COUNT_L_ARM  6
-
 
 
 // how long do you want the system crash to be?
@@ -90,9 +81,16 @@ Adafruit_NeoPixel strip_r_arm(LED_COUNT_R_ARM, LED_PIN_R_ARM, NEO_GRB + NEO_KHZ8
 // Declare our NeoPixel strip object controlling the left arm light:
 Adafruit_NeoPixel strip_l_arm(LED_COUNT_L_ARM, LED_PIN_L_ARM, NEO_GRB + NEO_KHZ800);
 
-int sensorPin = A0; //input pin for the potentiometer
-int sensorValue = 0; // variable to store the value coming from the sensor
-int duration; // PWM pulse width variable
+// LED Update Settings
+Timer<> LEDTimer;
+#define LED_UPDATE_INTERVAL 10 // In millis, how often to call the LED update function
+
+enum OpState { NORMAL = 0, RUNNING = 1, THINKING = 2, ANGRY = 3, SHUTDOWN = 4 };
+OpState op_state;
+
+// int sensorPin = A0; //input pin for the potentiometer
+// int sensorValue = 0; // variable to store the value coming from the sensor
+int PWMSigDuration; // PWM pulse width variable
 
 // setup() function -- runs once at startup --------------------------------
 
@@ -121,7 +119,7 @@ void setup() {
   strip_l_arm.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   pinMode(PWM_INPUT, INPUT); // PWM input pin
-  pinMode(SPEECH_IN, INPUT); // signal that PhyzAI is speaking
+  pinMode(SPEECH_IN_PIN, INPUT); // signal that PhyzAI is speaking
 
   Serial.begin(9600);
 
@@ -130,49 +128,51 @@ void setup() {
 
   mp3_command(CMD_SEL_DEV, DEV_TF);  // select the TF card
   delay(20);                        // wait for 200ms
+
+  // Setup LED timer
+  LEDTimer.every(LED_UPDATE_INTERVAL, updateLEDs);
 }
 
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 
 void loop() {
-  enum OpState { NORMAL = 0, RUNNING = 1, THINKING = 2, ANGRY = 3, SHUTDOWN = 4 };
-  //typedef enum OpState OpState_t ;
-  OpState op_state;
+  LEDTimer.tick();
 
-  sensorValue = analogRead(sensorPin); // capture sensor input
+  // sensorValue = analogRead(sensorPin); // capture sensor input
 
-  duration = pulseIn(PWM_INPUT, HIGH); // capture pwm input
+  PWMSigDuration = pulseIn(PWM_INPUT, HIGH); // capture pwm input
 
-// Debug Serial.print("PWM Value: ");
-// Debug Serial.println(duration);
+  // Debug Serial.print("PWM Value: ");
+  // Debug Serial.println(PWMSigDuration);
 
-// define op_state based on PWM inputs
-if (duration > 1900) { op_state = OpState::NORMAL;}
-else if (duration > 1700) { op_state = OpState::THINKING;}
-else if (duration > 1400) { op_state = OpState::ANGRY;}
-else if (duration > 1100) { op_state = OpState::SHUTDOWN;}
-else op_state = OpState::RUNNING;
+  // define op_state based on PWM inputs
+  if (PWMSigDuration > 1900) { op_state = OpState::NORMAL;}
+  else if (PWMSigDuration > 1700) { op_state = OpState::THINKING;}
+  else if (PWMSigDuration > 1400) { op_state = OpState::ANGRY;}
+  else if (PWMSigDuration > 1100) { op_state = OpState::SHUTDOWN;}
+  else op_state = OpState::RUNNING;
 
-// sample mp3 commands
-mp3_command(CMD_PLAY, 0x0000);       // Play mp3
-//mp3_command(CMD_PAUSE, 0x0000);      // Pause mp3
-//mp3_command(CMD_PLAY_NEXT, 0x0000);  // Play next mp3
-//mp3_command(CMD_PLAY_PREV, 0x0000);  // Play previous mp3
-//mp3_command(CMD_SET_VOLUME, 30);     // Change volume to 30
+  // sample mp3 commands
+  mp3_command(CMD_PLAY, 0x0000);       // Play mp3
+  //mp3_command(CMD_PAUSE, 0x0000);      // Pause mp3
+  //mp3_command(CMD_PLAY_NEXT, 0x0000);  // Play next mp3
+  //mp3_command(CMD_PLAY_PREV, 0x0000);  // Play previous mp3
+  //mp3_command(CMD_SET_VOLUME, 30);     // Change volume to 30
 
- //op_state = OpState::THINKING; // debug
+  //op_state = OpState::THINKING; // debug
 
+  /*
   switch (op_state) {
     case OpState::NORMAL:
       // continuously change between green and blue
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(i, 10); // Green
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+      //  if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
       }
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(255-i, 10); // Green
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+      //  if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
       }
     break;
 
@@ -185,11 +185,11 @@ mp3_command(CMD_PLAY, 0x0000);       // Play mp3
     // angry red eyes
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeAngry(i, 10); // Green
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+      //  if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
       }
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeAngry(255-i, 10); // Green
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+      //  if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
       }
 
       strip_eyes.clear(); // lights off
@@ -206,11 +206,26 @@ mp3_command(CMD_PLAY, 0x0000);       // Play mp3
     // statements
     break;
   }
+  */
+}
 
+void updateLEDs() {
+  switch(op_state) {
+    case NORMAL:
+      break;
+    case THINKING:
+      break;
+    case ANGRY:
+      break;
+    case RUNNING:
+      break;
+    case SHUTDOWN:
+      strip_eyes.clear();
+      break;
+  }
 }
 
 // sending commands to the MP3 player
-
 void mp3_command(int8_t command, int16_t dat) {
   int8_t frame[8] = { 0 };
   frame[0] = 0x7e;                // starting byte
@@ -238,8 +253,6 @@ void randomColors (int wait) {
     delay(wait); 
   }
 }
-
-
 
 // Fill strip pixels one after another with a color. Strip is NOT cleared
 // first; anything there will be covered pixel by pixel. Pass in color
@@ -275,7 +288,7 @@ void colorSwipeNormal(int color_val, int wait) {
   }
 
   // Make the mouth move
-  speech_on = digitalRead(SPEECH_IN);
+  speech_on = digitalRead(SPEECH_IN_PIN);
 
   // Debug Serial.print("Speech value: ");
   // Debug Serial.println(speech_on);
@@ -375,7 +388,7 @@ void theaterChaseRainbow(int wait) {
 
       strip_eyes.show();                // Update strip with new contents
 
-     // if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+     // if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
 
       delay(wait);                 // Pause for a moment
       firstPixelHue += 65536 / 90; // One cycle of color wheel over 90 frames
@@ -390,9 +403,7 @@ void theaterChaseRainbow(int wait) {
         }
       }
       strip_heart.show();                // Update strip with new contents
-        //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
+        //  if (abs(pulseIn(PWM_INPUT, HIGH) - PWMSigDuration) > INTERRUPT_THRESHOLD) { break;}
 
   }
 }
-
-
