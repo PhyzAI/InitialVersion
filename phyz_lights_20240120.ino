@@ -94,6 +94,30 @@ int sensorPin = A0; //input pin for the potentiometer
 int sensorValue = 0; // variable to store the value coming from the sensor
 int duration; // PWM pulse width variable
 
+int aaaaa = 0;
+ISR(TIMER2_OVF_vect) {
+  if (aaaaa < 100) {aaaaa++; return;}
+  else aaaaa = 0;
+  bool speech_on = digitalRead(SPEECH_IN);
+
+  if (speech_on) {
+    for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
+      strip_mouth.setPixelColor(i, strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+
+
+      
+    }
+  } else {
+    strip_mouth.clear();
+  }
+
+  strip_mouth.show();
+  Serial.print("Speech value: ");
+      Serial.println(speech_on); 
+  aaaaa++;
+  TCNT2 = 0x00;
+}
+
 // setup() function -- runs once at startup --------------------------------
 
 void setup() {
@@ -130,12 +154,22 @@ void setup() {
 
   mp3_command(CMD_SEL_DEV, DEV_TF);  // select the TF card
   delay(20);                        // wait for 200ms
+
+  TCCR2A = 0;
+  TCCR2B = 0;
+  TCNT2 = 0x00;                        // preload timer
+  TCCR2B |= (0 << CS22) | (1 << CS21) | (1 << CS20); // 1024 prescaler
+  TIMSK2 |= (1 << TOIE2);               // enable timer overflow interrupt ISR
+
+
 }
 
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 
 void loop() {
+
+
   enum OpState { NORMAL = 0, RUNNING = 1, THINKING = 2, ANGRY = 3, SHUTDOWN = 4 };
   //typedef enum OpState OpState_t ;
   OpState op_state;
@@ -162,16 +196,48 @@ mp3_command(CMD_PLAY, 0x0000);       // Play mp3
 //mp3_command(CMD_SET_VOLUME, 30);     // Change volume to 30
 
  //op_state = OpState::THINKING; // debug
+  bool speech_on;
 
   switch (op_state) {
     case OpState::NORMAL:
       // continuously change between green and blue
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(i, 10); // Green
+  // Make the mouth move
+        // speech_on = digitalRead(SPEECH_IN);
+
+        // if (speech_on) {
+        //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
+        //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+
+ 
+        //     Serial.print("Speech value: ");
+        //     Serial.println(speech_on); 
+        //   }
+        // } else {
+        //   strip_mouth.clear();
+        // }
+
+        // strip_mouth.show();
       //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
       }
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(255-i, 10); // Green
+  // Make the mouth move
+        // speech_on = digitalRead(SPEECH_IN);
+
+        // if (speech_on) {
+        //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
+        //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+        //   }
+        // } else {
+        //   strip_mouth.clear();
+        // }
+
+        // strip_mouth.show();
+         
+        // Serial.print("Speech value: ");
+        // Serial.println(speech_on); 
       //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
       }
     break;
@@ -201,6 +267,7 @@ mp3_command(CMD_PLAY, 0x0000);       // Play mp3
     break;
     case OpState::SHUTDOWN: // turn everything off
       strip_eyes.clear();  
+      strip_mouth.clear();
     break;
     default:
     // statements
@@ -274,22 +341,24 @@ void colorSwipeNormal(int color_val, int wait) {
     strip_heart.setPixelColor(i%strip_heart.numPixels(), strip_eyes.Color(color_val,0,0));         //  Set pixel's color (in RAM)
   }
 
-  // Make the mouth move
-  speech_on = digitalRead(SPEECH_IN);
+  // // Make the mouth move
+  // speech_on = digitalRead(SPEECH_IN);
 
-  // Debug Serial.print("Speech value: ");
-  // Debug Serial.println(speech_on);
-  for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
-    if (speech_on) {
-      strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_eyes.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
-    } else {
-      strip_mouth.clear();
-    }
-  }
+  // if (speech_on) {
+  //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
+  //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+
+ 
+  //     Serial.print("Speech value: ");
+  //     Serial.println(speech_on); 
+  //   }
+  // } else {
+  //     strip_mouth.clear();
+  // }
 
   strip_eyes.show();                     //  Update eyes to match
   strip_heart.show();                    //  update heart
-  strip_mouth.show();                    //  update mouth
+  // strip_mouth.show();                    //  update mouth
   delay(wait);                           //  Pause for a moment
 }
 
