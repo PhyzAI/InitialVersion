@@ -85,6 +85,8 @@ Adafruit_NeoPixel strip_l_arm(LED_COUNT_L_ARM, LED_PIN_L_ARM, NEO_GRB + NEO_KHZ8
 Timer<> LEDTimer;
 #define LED_UPDATE_INTERVAL 10 // In millis, how often to call the LED update function
 
+
+
 enum OpState { NORMAL = 0, RUNNING = 1, THINKING = 2, ANGRY = 3, SHUTDOWN = 4 };
 OpState op_state;
 
@@ -209,6 +211,7 @@ void loop() {
   */
 }
 
+// Called via LED Timer - Main function for updating LEDs on the timer
 void updateLEDs() {
   switch(op_state) {
     case NORMAL:
@@ -222,6 +225,13 @@ void updateLEDs() {
     case SHUTDOWN:
       strip_eyes.clear();
       break;
+  }
+
+  // Update mouth
+  if (digitalRead(SPEECH_IN_PIN)) {
+    setStripToColor(strip_mouth, random(0, 0xFFFFFFFF)); // Set mouth strip to random color
+  } else {
+    strip_mouth.clear();
   }
 }
 
@@ -294,7 +304,7 @@ void colorSwipeNormal(int color_val, int wait) {
   // Debug Serial.println(speech_on);
   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
     if (speech_on) {
-      strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_eyes.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+      strip_mouth.setPixelColor(i%strip_mouth.numPixels(), random(0,0xFFFFFFFF)); //  Set Pixel to a random color 
     } else {
       strip_mouth.clear();
     }
