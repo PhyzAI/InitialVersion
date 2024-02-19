@@ -57,6 +57,14 @@ SoftwareSerial mp3(ARDUINO_RX, ARDUINO_TX);
 #define LED_COUNT_R_ARM  6
 #define LED_COUNT_L_ARM  6
 
+#define NORMAL_THRESHOLD 1600 //1900
+// #define THINKING_THRESHOLD 1700 
+#define ANGRY_THRESHOLD 1400
+#define RUNNING_THRESHOLD 1100
+#define SHUTDOWN_THRESHOLD 
+
+
+
 
 
 // how long do you want the system crash to be?
@@ -103,17 +111,14 @@ ISR(TIMER2_OVF_vect) {
   if (speech_on) {
     for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
       strip_mouth.setPixelColor(i, strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
-
-
-      
     }
   } else {
     strip_mouth.clear();
   }
 
   strip_mouth.show();
-  Serial.print("Speech value: ");
-      Serial.println(speech_on); 
+//  Serial.print("Speech value: ");
+//  Serial.println(speech_on); 
   aaaaa++;
   TCNT2 = 0x00;
 }
@@ -161,7 +166,6 @@ void setup() {
   TCCR2B |= (0 << CS22) | (1 << CS21) | (1 << CS20); // 1024 prescaler
   TIMSK2 |= (1 << TOIE2);               // enable timer overflow interrupt ISR
 
-
 }
 
 
@@ -182,10 +186,10 @@ void loop() {
 // Debug Serial.println(duration);
 
 // define op_state based on PWM inputs
-if (duration > 1900) { op_state = OpState::NORMAL;}
-else if (duration > 1700) { op_state = OpState::THINKING;}
-else if (duration > 1400) { op_state = OpState::ANGRY;}
-else if (duration > 1100) { op_state = OpState::SHUTDOWN;}
+if (duration > NORMAL_THRESHOLD) { op_state = OpState::NORMAL;}
+//else if (duration > THINKING_THRESHOLD) { op_state = OpState::THINKING;}
+else if (duration > ANGRY_THRESHOLD) { op_state = OpState::ANGRY;}
+else if (duration > RUNNING_THRESHOLD) { op_state = OpState::SHUTDOWN;}
 else op_state = OpState::RUNNING;
 
 // sample mp3 commands
@@ -203,42 +207,9 @@ mp3_command(CMD_PLAY, 0x0000);       // Play mp3
       // continuously change between green and blue
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(i, 10); // Green
-  // Make the mouth move
-        // speech_on = digitalRead(SPEECH_IN);
-
-        // if (speech_on) {
-        //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
-        //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
-
- 
-        //     Serial.print("Speech value: ");
-        //     Serial.println(speech_on); 
-        //   }
-        // } else {
-        //   strip_mouth.clear();
-        // }
-
-        // strip_mouth.show();
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
       }
       for(int i=0; i<255; i=i+num_increments) { // For each pixel in strip...
         colorSwipeNormal(255-i, 10); // Green
-  // Make the mouth move
-        // speech_on = digitalRead(SPEECH_IN);
-
-        // if (speech_on) {
-        //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
-        //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
-        //   }
-        // } else {
-        //   strip_mouth.clear();
-        // }
-
-        // strip_mouth.show();
-         
-        // Serial.print("Speech value: ");
-        // Serial.println(speech_on); 
-      //  if (abs(pulseIn(PWM_INPUT, HIGH) - duration) > INTERRUPT_THRESHOLD) { break;}
       }
     break;
 
@@ -341,24 +312,9 @@ void colorSwipeNormal(int color_val, int wait) {
     strip_heart.setPixelColor(i%strip_heart.numPixels(), strip_eyes.Color(color_val,0,0));         //  Set pixel's color (in RAM)
   }
 
-  // // Make the mouth move
-  // speech_on = digitalRead(SPEECH_IN);
-
-  // if (speech_on) {
-  //   for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
-  //     strip_mouth.setPixelColor(i%strip_mouth.numPixels(), strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
-
- 
-  //     Serial.print("Speech value: ");
-  //     Serial.println(speech_on); 
-  //   }
-  // } else {
-  //     strip_mouth.clear();
-  // }
 
   strip_eyes.show();                     //  Update eyes to match
   strip_heart.show();                    //  update heart
-  // strip_mouth.show();                    //  update mouth
   delay(wait);                           //  Pause for a moment
 }
 
