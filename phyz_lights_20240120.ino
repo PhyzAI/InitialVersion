@@ -102,7 +102,12 @@ int sensorPin = A0; //input pin for the potentiometer
 int sensorValue = 0; // variable to store the value coming from the sensor
 int duration; // PWM pulse width variable
 
+
+
 int aaaaa = 0;
+int r_arm_duration = 0;
+int l_arm_duration = 0;
+
 ISR(TIMER2_OVF_vect) {
   if (aaaaa < 100) {aaaaa++; return;}
   else aaaaa = 0;
@@ -112,16 +117,45 @@ ISR(TIMER2_OVF_vect) {
     for(int i=0; i<strip_mouth.numPixels(); i++) { // For each pixel in strip...
       strip_mouth.setPixelColor(i, strip_mouth.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
     }
+    if ((r_arm_duration > 0) && (random(0,255) < 250)) {
+      r_arm_duration++;
+    }
+    else if (random(0,255)<3) {
+      strip_r_arm.setPixelColor(1, strip_r_arm.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+      r_arm_duration++;
+    } else {
+      strip_r_arm.clear();
+      r_arm_duration = 0;
+    }
+    if ((l_arm_duration > 0) && (random(0,255) < 250)) {
+      l_arm_duration++;
+    }
+    else if (random(0,255)<3) {
+      strip_l_arm.setPixelColor(1, strip_l_arm.Color(random(0,255),random(0,255),random(0,255)));         //  Set pixel's color (in RAM)
+      l_arm_duration++;
+    } else {
+      strip_l_arm.clear();
+      l_arm_duration = 0;
+    }
+
   } else {
     strip_mouth.clear();
+    strip_r_arm.clear();
+    strip_l_arm.clear();
+    r_arm_duration = 0;
+    l_arm_duration = 0;
   }
 
   strip_mouth.show();
+  strip_r_arm.show();
+  strip_l_arm.show();
+
 //  Serial.print("Speech value: ");
 //  Serial.println(speech_on); 
   aaaaa++;
   TCNT2 = 0x00;
 }
+
 
 // setup() function -- runs once at startup --------------------------------
 
