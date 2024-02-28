@@ -65,8 +65,6 @@ SoftwareSerial mp3(ARDUINO_RX, ARDUINO_TX);
 
 
 
-
-
 // how long do you want the system crash to be?
 #define CRASH_LENGTH 10
 
