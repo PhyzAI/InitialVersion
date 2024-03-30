@@ -104,6 +104,25 @@ class LedStripLightShow {
 };
 
 
+// address
+// 10 head arduino
+// 01 engine arduino
+// 11 chassis arduion
+
+// command structure for Phyz head arduino:
+// strip[2:0] cmd[4:0]
+// 010 00010 eyes normal mode (colorswipenormal for blue-green eyes; top eye off)
+// 010 00101 eyes thinking mode (theaterchaserainbow)
+// 010 11000 eyes angry (red - bits 3-1 are R, G, B respectively when bit 4 == 1)
+// 010 10100 eyes green
+// 010 10010 eyes blue
+// 100 01110 mouth talking (random)
+// xxx 00000 any strip - OFF
+// 110 11001 heartbeat - fast
+// 110 10101 heartbeat - normal
+// 110 10011 heartbeat - slow
+// 101 01110 L arm - ON
+// 001 01110 R arm - ON
 
 // void I2Ccommand (int command){
 //  switch (command){
