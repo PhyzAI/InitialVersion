@@ -3,13 +3,18 @@
 #
 # Initial Rev, RKD 2024-07
 
+# Libraries to install
+# - pip install pygame
+# - pip install opencv-python
+# - pip install numpy   # for the display
+# - put zmaestro.py in same directory as this file
 
+# Also install the Maestro driver and control
+# - https://www.pololu.com/file/0J266/maestro-windows-130422.zip
+# - run Maestro Control Center
+# - in Serial Settings, choose "USB Dual Port"
+# - and choose "Never Sleep"
 
-import pygame
-import zmaestro as maestro
-import cv2 
-import numpy as np
-  
 
 # Info Links
 # Search for Playstation 4 Controller here:
@@ -18,6 +23,12 @@ import numpy as np
 # Servo controller "Maestro Mini"
 # https://www.pololu.com/product/1350/resources
 # https://github.com/frc4564/maestro
+
+
+import pygame
+import zmaestro as maestro
+import cv2 
+import numpy as np
 
 
 
@@ -44,7 +55,7 @@ image_size_y = 600
 
 # PS4 Buttons
 ps4_button = {
-    0:    'Cross',
+    0: 'Cross',
     1: 'Circle',
     2: 'Square',
     3: 'Triangle',
@@ -67,6 +78,8 @@ ps4_button = {
 
 
 def draw_pos(pos_x,pos_y, angle=0, left_arm=0, right_arm=0): 
+    """ Draw an image of the current head and arm positions """
+
     image = np.zeros((image_size_y,image_size_x,3), dtype=np.uint8)
 
     # Getting the height and width of the image 
