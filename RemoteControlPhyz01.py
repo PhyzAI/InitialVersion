@@ -34,20 +34,20 @@ import numpy as np
 
 # Servo Definitions
 
-head_x_channel = 0   # Determine what these actually are on Phyz's Maestro board with Maestro Control Center
-head_y_channel = 2
-head_tilt_channel = 3
-arm_left_channel = 4  #FIXME: Haven't done anything with the arms yet
-arm_right_channel = 5
+head_x_channel = 1   # Determine what these actually are on Phyz's Maestro board with Maestro Control Center
+head_y_channel = 0
+head_tilt_channel = 2
+arm_left_channel = 3  #FIXME: Haven't done anything with the arms yet
+arm_right_channel = 4
 
-head_x_range = (5952, 6432, 6912)  # Get these from real PhyzAI Maestro board
-head_y_range = (5952, 6432, 6912)
-head_tilt_range = (1808*4, 2088*4, 2368*4) 
+head_x_range = (1520*4, 1620*4, 1728*4)  # Get these from real PhyzAI Maestro board
+head_y_range = (735*4, 936*4, 1136*4)
+head_tilt_range = (1344*4, 1450*4, 1552*4) 
 
 
 # Image Definitions
 
-enable_GUI = True
+enable_GUI = False
 
 image_size_x = 800
 image_size_y = 600
@@ -120,7 +120,7 @@ def draw_pos(pos_x,pos_y, angle=0, left_arm=0, right_arm=0):
 
 pygame.init()
 
-servo = maestro.Controller('COM3', device=2)  # Check COM port in Windows Device Manager
+servo = maestro.Controller('COM5', device=1)  # Check COM port in Windows Device Manager
 
 j = pygame.joystick.Joystick(0)   # Assume we only have 1
 j.init()
@@ -178,6 +178,9 @@ try:
               f"{left_trigger:.2f},{right_trigger:.2f},")
         
 
+        x_step = 20
+        y_step = 10
+
         deadzone = 0.1
         curr_x = servo.getPosition(head_x_channel)
         curr_y = servo.getPosition(head_y_channel)
@@ -185,19 +188,19 @@ try:
             
         if (abs(left_stick_x_axis) > deadzone) and left_stick_x_axis < 0:
             pos_x -= 5
-            servo.setTarget(head_x_channel, curr_x - 10)
+            servo.setTarget(head_x_channel, curr_x - x_step)
 
         elif (abs(left_stick_x_axis) > deadzone) and left_stick_x_axis > 0:
             pos_x += 5
             #curr_x = servo.getPosition(head_x_channel)
-            servo.setTarget(head_x_channel, curr_x + 10)
+            servo.setTarget(head_x_channel, curr_x + x_step)
         
         if (abs(left_stick_y_axis) > deadzone) and left_stick_y_axis < 0:
             pos_y -= 2
-            servo.setTarget(head_y_channel, curr_y - 5)
+            servo.setTarget(head_y_channel, curr_y - y_step)
         elif (abs(left_stick_y_axis) > deadzone) and left_stick_y_axis > 0:
             pos_y += 2
-            servo.setTarget(head_y_channel, curr_y + 5)
+            servo.setTarget(head_y_channel, curr_y + y_step)
 
         if (abs(right_stick_x_axis) > deadzone) and right_stick_x_axis < 0:
             head_angle -= 1
