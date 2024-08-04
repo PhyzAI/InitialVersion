@@ -31,26 +31,29 @@ import cv2
 import numpy as np
 
 
+# Image Definitions
+
+enable_GUI = True
+
+image_size_x = 800
+image_size_y = 600
+
+
 
 # Servo Definitions
 
 head_x_channel = 1   # Determine what these actually are on Phyz's Maestro board with Maestro Control Center
 head_y_channel = 0
 head_tilt_channel = 2
-arm_left_channel = 3  #FIXME: Haven't done anything with the arms yet
+arm_left_channel = 3 
 arm_right_channel = 4
 
 head_x_range = (1520*4, 1620*4, 1728*4)  # Get these from real PhyzAI Maestro board
 head_y_range = (735*4, 936*4, 1136*4)
 head_tilt_range = (1344*4, 1450*4, 1552*4) 
+arm_left_range = (1008*4, 1008*4, 3008*4)  #FIXME: Need to get these.
+arm_right_range = (1008*4, 1008*4, 3008*4)
 
-
-# Image Definitions
-
-enable_GUI = False
-
-image_size_x = 800
-image_size_y = 600
 
 
 # PS4 Buttons
@@ -99,15 +102,23 @@ def draw_pos(pos_x,pos_y, angle=0, left_arm=0, right_arm=0):
     cv2.ellipse(image, (pos_x, pos_y), axesLength, 
            angle, startAngle, endAngle, color, thickness)
     
-    # Arms
-    if left_arm == 0:
-        cv2.line(image,(pos_x-70, pos_y-20), (pos_x-70, pos_y+20), (255,0,0), 6)
-    else:
-        cv2.circle(image,(pos_x-70, pos_y), 10, (255,0,0), 6)
-    if right_arm == 0:
-        cv2.line(image,(pos_x+70, pos_y-20), (pos_x+70, pos_y+20), (255,0,0), 6)
-    else:
-        cv2.circle(image,(pos_x+70, pos_y), 10, (255,0,0), 6)
+    # Ellipse of left arm
+    axesLength = (10, int(50-40*left_arm)) 
+    startAngle = 0
+    endAngle = 360
+    color = (255, 0, 0) 
+    thickness = 5
+    cv2.ellipse(image, (pos_x-70, pos_y+40-int(40*left_arm)), axesLength, 
+           0, startAngle, endAngle, color, thickness)
+    
+    # Ellipse of right arm
+    axesLength = (10, int(50-40*right_arm)) 
+    startAngle = 0
+    endAngle = 360
+    color = (255, 0, 0) 
+    thickness = 5
+    cv2.ellipse(image, (pos_x+70, pos_y+40-int(40*right_arm)), axesLength, 
+           0, startAngle, endAngle, color, thickness)
         
     # Show the image 
     cv2.imshow('image', image) 
@@ -120,7 +131,9 @@ def draw_pos(pos_x,pos_y, angle=0, left_arm=0, right_arm=0):
 
 pygame.init()
 
-servo = maestro.Controller('COM5', device=1)  # Check COM port in Windows Device Manager
+# FIXME: Choose correct com-port and device
+#servo = maestro.Controller('COM5', device=1)  # Phyz; Check COM port in Windows Device Manager
+servo = maestro.Controller('COM3', device=2)  # Keith @ home; Check COM port in Windows Device Manager
 
 j = pygame.joystick.Joystick(0)   # Assume we only have 1
 j.init()
@@ -138,6 +151,8 @@ right_arm = 0
 servo.setTarget(head_x_channel, head_x_range[1])
 servo.setTarget(head_y_channel, head_y_range[1])
 servo.setTarget(head_tilt_channel, head_tilt_range[1])
+servo.setTarget(arm_left_channel, arm_left_range[1])
+servo.setTarget(arm_right_channel, arm_right_range[1])
 
 
 try:
@@ -164,23 +179,25 @@ try:
                 elif event.button == 10:
                     head_angle = 0
                     servo.setTarget(head_tilt_channel, head_tilt_range[1])
+                    servo.setTarget(head_tilt_channel, head_tilt_range[1])
+                    servo.setTarget(arm_left_channel, arm_left_range[1])
+                    servo.setTarget(arm_right_channel, arm_right_range[1])
         
         left_stick_x_axis = j.get_axis(0)
         left_stick_y_axis = j.get_axis(1)
         right_stick_x_axis = j.get_axis(2)
         right_stick_y_axis = j.get_axis(3)
+        arm_left_axis = (j.get_axis(4) + 1) / 2   # change (-1,1) to (0,1)
+        arm_right_axis = (j.get_axis(5) + 1) / 2 
 
-        left_trigger = j.get_axis(4)
-        right_trigger = j.get_axis(5)
-
-        print(f"{left_stick_x_axis:.2f},{left_stick_y_axis:.2f},"
-              f"{right_stick_x_axis:.2f},{right_stick_y_axis:.2f},"
-              f"{left_trigger:.2f},{right_trigger:.2f},")
+        #print(f"{left_stick_x_axis:.2f},{left_stick_y_axis:.2f},"
+        #      f"{right_stick_x_axis:.2f},{right_stick_y_axis:.2f},"
+        #      f"{arm_left_axis:.2f},{arm_right_axis:.2f},")
         
 
         x_step = 20
         y_step = 10
-
+        
         deadzone = 0.1
         curr_x = servo.getPosition(head_x_channel)
         curr_y = servo.getPosition(head_y_channel)
@@ -192,7 +209,6 @@ try:
 
         elif (abs(left_stick_x_axis) > deadzone) and left_stick_x_axis > 0:
             pos_x += 5
-            #curr_x = servo.getPosition(head_x_channel)
             servo.setTarget(head_x_channel, curr_x + x_step)
         
         if (abs(left_stick_y_axis) > deadzone) and left_stick_y_axis < 0:
@@ -210,17 +226,16 @@ try:
             servo.setTarget(head_tilt_channel, curr_tilt + 5)
 
 
-        if left_trigger > deadzone:
-            left_arm = 1
-        else:
-            left_arm = 0
-        if right_trigger > deadzone:
-            right_arm = 1
-        else:
-            right_arm = 0
+        curr_left_pos = int(arm_left_axis * (arm_left_range[2] - arm_left_range[0]) + arm_left_range[0])
+        servo.setTarget(arm_left_channel, curr_left_pos)
+        curr_right_pos = int(arm_right_axis * (arm_right_range[2] - arm_right_range[0]) + arm_right_range[0])
+        servo.setTarget(arm_right_channel, curr_right_pos)
+
+        print("arms: ", curr_left_pos, curr_right_pos)
+
 
         if enable_GUI:
-            draw_pos(pos_x, pos_y, head_angle, left_arm, right_arm)
+            draw_pos(pos_x, pos_y, head_angle, arm_left_axis, arm_right_axis)
         
         
 except KeyboardInterrupt:
