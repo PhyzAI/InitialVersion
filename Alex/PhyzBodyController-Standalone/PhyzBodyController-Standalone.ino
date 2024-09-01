@@ -18,6 +18,7 @@ SW1 - 6 Config
 +++++ Motor Controller Settings
 CH1 - L/R on the right stick
 CH2 - U/D on the right stick
+CH3 - L/R on the left stick
 CH5 - Right 3 pos switch
 CH6 - Right dial
 
@@ -30,6 +31,7 @@ CH6 - Right dial
 // RC input Pins
 #define CH_1_PIN A0
 #define CH_2_PIN A1
+#define CH_3_PIN A4
 #define CH_5_PIN A2
 #define CH_6_PIN A3 // Speed Dial
 
@@ -47,8 +49,8 @@ CH6 - Right dial
 // Modes: 0=motor lock, 1=tank mode, 2=omni wheel mode
 uint8_t motorMode = 0;
 #define MOTOR_LOCK_MODE 0
-#define TANK_MODE 1
-#define OMNI_MODE 2
+#define TANK_MODE       1
+#define OMNI_MODE       2
 
 enum Direction {
   FF, // Forward
@@ -63,7 +65,7 @@ enum Direction {
 };
 Direction phyzDirection;
 
-int ch1Value, ch2Value;
+int ch1Value_turn, ch2Value_straight, ch3_turnOmni;
 int ch5Value, ch6Value;
 
 int motorSpeed = 0;
@@ -72,8 +74,8 @@ Servo BLServo, FLServo;
 Servo BRServo, FRServo;
 #define BLSERVO_INV -1
 #define FLSERVO_INV -1
-#define BRSERVO_INV 1
-#define FRSERVO_INV -1
+#define BRSERVO_INV  1
+#define FRSERVO_INV  1
 
 // Read the number of a given channel and convert to the range provided.
 // If the channel is off, return the default value
@@ -94,14 +96,16 @@ bool readSwitch(byte channelInput, bool defaultValue){
 
 // Serial logging for debug
 void logToSerial() {
-  Serial.print(" CH1:"); Serial.print(ch1Value);
-  Serial.print(" CH2:"); Serial.print(ch2Value);
+  Serial.print(" CH1_turn:");     Serial.print(ch1Value_turn);
+  Serial.print(" CH2_straight:"); Serial.print(ch2Value_straight);
+  Serial.print(" CH3_turnOmni:"); Serial.print(ch3Value_turnOmni);
+
   // Serial.print(" CH5:"); Serial.print(ch5Value);
   // Serial.print(" CH6:"); Serial.print(ch6Value);
 
   Serial.print(" Motor Speed:"); Serial.print(motorSpeed);
-  Serial.print(" Motor Mode:"); Serial.print(motorMode);
-  Serial.print(" Direction:"); Serial.print(phyzDirection);
+  Serial.print(" Motor Mode:");  Serial.print(motorMode);
+  Serial.print(" Direction:");   Serial.print(phyzDirection);
   Serial.println();
 }
 
@@ -111,6 +115,7 @@ void setup() {
   // Set pinmodes
   pinMode(CH_1_PIN, INPUT);
   pinMode(CH_2_PIN, INPUT);
+  pinMode(CH_3_PIN, INPUT);
   pinMode(CH_5_PIN, INPUT);
   pinMode(CH_6_PIN, INPUT);
 
@@ -135,28 +140,45 @@ void loop() {
 
 
   // Read Stick Values
-  ch1Value = readChannel(CH_1_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0);
-  ch2Value = -readChannel(CH_2_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0);
+  ch1Value_turn     = readChannel(CH_1_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
+  ch2Value_straight = -readChannel(CH_2_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0);
+  ch3Value_turnOmni = readChannel(CH_3_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
+
 
   // Get Direction of travel
-  phyzDirection = getDirection(ch2Value, ch1Value);
+  phyzDirection = getDirection(ch2Value_straight, ch1Value_turn);
 
 
-  setMotorSpeed(BLServo, (ch2Value*motorSpeed)/100);
-  setMotorSpeed(FLServo, (ch2Value*motorSpeed)/100);
-  setMotorSpeed(BRServo, (ch2Value*motorSpeed)/100);
-  setMotorSpeed(FRServo, (ch2Value*motorSpeed)/100);
+  //setMotorSpeed(BLServo, (ch2Value_straight*motorSpeed)/100);
+  //setMotorSpeed(FLServo, (ch2Value_straight*motorSpeed)/100);
+  //setMotorSpeed(BRServo, (ch2Value_straight*motorSpeed)/100);
+  //setMotorSpeed(FRServo, (ch2Value_straight*motorSpeed)/100);
 
 
   // Switch Motor Mode
   switch(motorMode) {
     case MOTOR_LOCK_MODE:
-      // do nada
+      setMotorSpeed(BLServo, 0);
+      setMotorSpeed(FLServo, 0);
+      setMotorSpeed(BRServo, 0);
+      setMotorSpeed(FRServo, 0);
     break;
     case TANK_MODE:
+      setMotorSpeed(BLServo, ((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FLServo, ((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BRServo, ((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FRServo, ((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
     break;
     case OMNI_MODE:
+      // frontLeftPower = drive + strafe + rotate;
+      // frontRightPower = drive - strafe - rotate;
+      // backLeftPower = drive - strafe + rotate;
+      // backRightPower = drive + strafe - rotate;
 
+      setMotorSpeed(BLServo, ((ch2Value_straight-ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(FLServo, ((ch2Value_straight+ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(BRServo, ((ch2Value_straight+ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(FRServo, ((ch2Value_straight-ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
     break;
   }
 
