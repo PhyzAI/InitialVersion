@@ -65,7 +65,7 @@ enum Direction {
 };
 Direction phyzDirection;
 
-int ch1Value_turn, ch2Value_straight, ch3_turnOmni;
+int ch1Value_turn, ch2Value_straight, ch3Value_turnOmni;
 int ch5Value, ch6Value;
 
 int motorSpeed = 0;
@@ -75,7 +75,7 @@ Servo BRServo, FRServo;
 #define BLSERVO_INV -1
 #define FLSERVO_INV -1
 #define BRSERVO_INV  1
-#define FRSERVO_INV  1
+#define FRSERVO_INV -1 //this wheel turns on the wrong direction; workaround here; cables are marked PF
 
 // Read the number of a given channel and convert to the range provided.
 // If the channel is off, return the default value
@@ -148,14 +148,15 @@ void loop() {
   // Get Direction of travel
   phyzDirection = getDirection(ch2Value_straight, ch1Value_turn);
 
-
-  //setMotorSpeed(BLServo, (ch2Value_straight*motorSpeed)/100);
-  //setMotorSpeed(FLServo, (ch2Value_straight*motorSpeed)/100);
-  //setMotorSpeed(BRServo, (ch2Value_straight*motorSpeed)/100);
-  //setMotorSpeed(FRServo, (ch2Value_straight*motorSpeed)/100);
-
+/*
+  setMotorSpeed(BLServo, BLSERVO_INV*(ch2Value_straight*motorSpeed)/100);
+  setMotorSpeed(FLServo, FLSERVO_INV*(ch2Value_straight*motorSpeed)/100);
+  setMotorSpeed(BRServo, BRSERVO_INV*(ch2Value_straight*motorSpeed)/100);
+  setMotorSpeed(FRServo, FRSERVO_INV*(ch2Value_straight*motorSpeed)/100);
+*/
 
   // Switch Motor Mode
+  
   switch(motorMode) {
     case MOTOR_LOCK_MODE:
       setMotorSpeed(BLServo, 0);
@@ -164,10 +165,10 @@ void loop() {
       setMotorSpeed(FRServo, 0);
     break;
     case TANK_MODE:
-      setMotorSpeed(BLServo, ((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(FLServo, ((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(BRServo, ((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(FRServo, ((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
     break;
     case OMNI_MODE:
       // frontLeftPower = drive + strafe + rotate;
@@ -175,10 +176,10 @@ void loop() {
       // backLeftPower = drive - strafe + rotate;
       // backRightPower = drive + strafe - rotate;
 
-      setMotorSpeed(BLServo, ((ch2Value_straight-ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(FLServo, ((ch2Value_straight+ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(BRServo, ((ch2Value_straight+ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(FRServo, ((ch2Value_straight-ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight-ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight+ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
     break;
   }
 
