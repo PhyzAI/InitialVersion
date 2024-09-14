@@ -22,6 +22,10 @@ CH3 - L/R on the left stick
 CH5 - Right 3 pos switch
 CH6 - Right dial
 
+The joysticks work as follows:
+ - In tank mode, right joystick controls forward/backward speed with up/down motion.
+ - In both tank and omni modes, left joystick controls left/right turn with left/right motion.
+ - In omni mode, right joystick controls full omni motion.
 */
 
 // Controller Settings
@@ -65,7 +69,7 @@ enum Direction {
 };
 Direction phyzDirection;
 
-int ch1Value_turn, ch2Value_straight, ch3Value_turnOmni;
+int ch1Value_omni, ch2Value_straight, ch3Value_turn;
 int ch5Value, ch6Value;
 
 int motorSpeed = 0;
@@ -96,7 +100,7 @@ bool readSwitch(byte channelInput, bool defaultValue){
 
 // Serial logging for debug
 void logToSerial() {
-  Serial.print(" CH1_turn:");     Serial.print(ch1Value_turn);
+  Serial.print(" CH1_omni:");     Serial.print(ch1Value_omni);
   Serial.print(" CH2_straight:"); Serial.print(ch2Value_straight);
   Serial.print(" CH3_turnOmni:"); Serial.print(ch3Value_turnOmni);
 
@@ -140,13 +144,13 @@ void loop() {
 
 
   // Read Stick Values
-  ch1Value_turn     = readChannel(CH_1_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
+  ch1Value_omni     = readChannel(CH_1_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
   ch2Value_straight = -readChannel(CH_2_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0);
-  ch3Value_turnOmni = readChannel(CH_3_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
+  ch3Value_turn = readChannel(CH_3_PIN, MIN_STICK_CH_VAL, MAX_STICK_CH_VAL, 0); 
 
 
   // Get Direction of travel
-  phyzDirection = getDirection(ch2Value_straight, ch1Value_turn);
+  phyzDirection = getDirection(ch2Value_straight, ch3Value_turn);
 
 /*
   setMotorSpeed(BLServo, BLSERVO_INV*(ch2Value_straight*motorSpeed)/100);
@@ -165,10 +169,10 @@ void loop() {
       setMotorSpeed(FRServo, 0);
     break;
     case TANK_MODE:
-      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
-      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch1Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight+ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight-ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch3Value_turn)*motorSpeed)/100);
     break;
     case OMNI_MODE:
       // frontLeftPower = drive + strafe + rotate;
@@ -176,10 +180,10 @@ void loop() {
       // backLeftPower = drive - strafe + rotate;
       // backRightPower = drive + strafe - rotate;
 
-      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight-ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch1Value_turn+ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight+ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
-      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch1Value_turn-ch3Value_turnOmni)*motorSpeed)/100);
+      setMotorSpeed(BLServo, BLSERVO_INV*((ch2Value_straight-ch1Value_omni+ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FLServo, FLSERVO_INV*((ch2Value_straight+ch1Value_omni+ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(BRServo, BRSERVO_INV*((ch2Value_straight+ch1Value_omni-ch3Value_turn)*motorSpeed)/100);
+      setMotorSpeed(FRServo, FRSERVO_INV*((ch2Value_straight-ch1Value_omni-ch3Value_turn)*motorSpeed)/100);
     break;
   }
 
